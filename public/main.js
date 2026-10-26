@@ -1,6 +1,6 @@
-var thumbUp = document.getElementsByClassName("fa-thumbs-up");
-var thumbDown = document.getElementsByClassName("fa-thumbs-down");
-var trash = document.getElementsByClassName("fa-trash");
+let thumbUp = document.getElementsByClassName("fa-thumbs-up");
+let thumbDown = document.getElementsByClassName("fa-thumbs-down");
+let trash = document.getElementsByClassName("fa-trash");
 
 Array.from(thumbUp).forEach(function(element) {
       element.addEventListener('click', function(){
@@ -30,14 +30,14 @@ Array.from(thumbDown).forEach(function(element) {
       element.addEventListener('click', function(){
         const name = this.parentNode.parentNode.childNodes[1].innerText
         const msg = this.parentNode.parentNode.childNodes[3].innerText
-        const thumbDown = parseFloat(this.parentNode.parentNode.childNodes[5].innerText)
+        const thumbUp = parseFloat(this.parentNode.parentNode.childNodes[5].innerText)
         fetch('messages', {
           method: 'put',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
             'name': name,
             'msg': msg,
-            'thumbUp':thumbDown - 1
+            'thumbUp':thumbUp - 1
           })
         })
         .then(response => {

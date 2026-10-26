@@ -1,106 +1,83 @@
-require('dotenv').config()
-
 const express = require('express')
 const app = express()
 const bodyParser = require('body-parser')
 const { MongoClient } = require('mongodb')
 
-let db
+let db;
 
-const username = encodeURIComponent(process.env.MONGODB_USERNAME)
-const password = encodeURIComponent(process.env.MONGODB_PASSWORD)
-const cluster = process.env.MONGODB_URI
+const url = "mongodb+srv://demo:demo@cluster0-q2ojb.mongodb.net/test?retryWrites=true";
+const dbName = "demo";
 
-const url = `mongodb+srv://${username}:${password}@${cluster}/?retryWrites=true&w=majority`
-
-const dbName = 'savage-demo'
-
-// Middleware
 app.set('view engine', 'ejs')
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 app.use(express.static('public'))
 
-// READ - Get all messages
+async function connectDB() {
+  try {
+    const client = new MongoClient(url);
+    await client.connect();
+    db = client.db(dbName);
+    console.log(`Connected to \`\${dbName}\`!`);
+    
+    app.listen(3000, () => {
+      console.log('Server is running on port 3000');
+    });
+  } catch (error) {
+    console.error("Database connection failed:", error);
+    process.exit(1);
+  }
+}
+
+connectDB();
+
 app.get('/', async (req, res) => {
   try {
-    const result = await db.collection('messages').find().toArray()
-
-    res.render('index.ejs', { messages: result })
-  } catch (error) {
-    console.error(error)
-    res.status(500).send('Error retrieving messages')
+    const result = await db.collection('messages').find().toArray();
+    res.render('index.ejs', { messages: result });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Error fetching messages");
   }
-})
+});
 
-// CREATE - Add a message
 app.post('/messages', async (req, res) => {
   try {
-    await db.collection('messages').insertOne({
-      name: req.body.name,
-      msg: req.body.msg,
-      thumbUp: 0,
-      thumbDown: 0
-    })
-
-    console.log('Saved to database')
-    res.redirect('/')
-  } catch (error) {
-    console.error(error)
-    res.status(500).send('Error saving message')
+    await db.collection('messages').insertOne({ 
+      name: req.body.name, 
+      msg: req.body.msg, 
+      thumbUp: 0, 
+      thumbDown: 0 
+    });
+    console.log('saved to database');
+    res.redirect('/');
+  } catch (err) {
+    console.log(err);
+    res.status(500).send(err);
   }
-})
+});
 
-// UPDATE - Like a message
 app.put('/messages', async (req, res) => {
   try {
     const result = await db.collection('messages').findOneAndUpdate(
-      {
-        name: req.body.name,
-        msg: req.body.msg
-      },
-      {
-        $set: {
-          thumbUp: req.body.thumbUp
-        }
-      },
-      {
-        sort: { _id: -1 },
-        upsert: true
-      }
-    )
-
-    res.send(result)
-  } catch (error) {
-    console.error(error)
-    res.status(500).send('Error updating message')
+      { name: req.body.name, msg: req.body.msg }, 
+      { $set: { thumbUp: req.body.thumbUp } }, 
+      { sort: { _id: -1 }, upsert: true }
+    );
+    res.send(result);
+  } catch (err) {
+    res.status(500).send(err);
   }
-})
+});
 
-// DELETE - Remove a message
 app.delete('/messages', async (req, res) => {
   try {
-    await db.collection('messages').findOneAndDelete({
-      name: req.body.name,
-      msg: req.body.msg
-    })
-
-    res.send('Message deleted!')
-  } catch (error) {
-    console.error(error)
-    res.status(500).send('Error deleting message')
+    await db.collection('messages').findOneAndDelete({ 
+      name: req.body.name, 
+      msg: req.body.msg 
+    });
+    res.send('Message deleted!');
+  } catch (err) {
+    res.status(500).send(err);
   }
-})
-
-// Connect to MongoDB
-MongoClient.connect(url)
-  .then(client => {
-    db = client.db(dbName)
-
-    console.log('Connected to ' + dbName)
-
-    app.listen(3000, () => {
-      console.log('Listening on port 3000')
-    })
-  })
-  .catch(error => console.error(error))
+});
